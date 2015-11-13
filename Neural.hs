@@ -1,3 +1,5 @@
+module Neural where
+
 import Numeric.LinearAlgebra
 import System.Random
 import Utilities
@@ -42,8 +44,8 @@ nflatten = concat . concat . ntoLists
 ntoLists :: Network -> [[[Double]]]
 ntoLists network = map toLists network
 
-fitness :: Network -> TrainingSet -> Double
-fitness network training =
+fitness :: TrainingSet -> Network -> Double
+fitness training network =
     let xs = map fst training
         ys = concat (map (toList . flatten . snd) training)
         actual = concat (map (toList . flatten . (forward network)) xs)
