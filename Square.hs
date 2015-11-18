@@ -21,9 +21,14 @@ randompopulation = do
 fit :: Genotype -> Double
 fit = (fitness trainingSet) . (nfromList [3, 4, 5, 6])
 
-
+-- Iterates fitness and selection on a population
 iterations :: Population -> [Population]
 iterations population = iterate (strangeSelection fit) population
+
+-- Iterates fitness and selection on a population, where the
+-- selection function uses randomness.
+randomIterations :: RandomGen g => g -> Population -> [Population]
+randomIterations g population = map snd $ iterate (rouletteWheel fit) (g, population)
 
 maximums :: [Population] -> [Double]
 maximums populations = map maximum $ (map.map) fit $ populations
