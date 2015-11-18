@@ -38,3 +38,15 @@ removeLast n xs = take ((length xs) - n) xs
 car = head
 cdr = tail
 cadr = car . cdr
+
+nrandoms :: (Random a, RandomGen g) => g -> Int -> ([a], g)
+nrandoms g 0 = ([], g)
+nrandoms g n = 
+    let (a, g') = random g
+        (rest, g'') = nrandoms g' (n-1)
+    in (a:rest, g'')
+
+
+-- Takes a list of (probability, value) and picks out a value at random.
+pick :: RandomGen g => g -> [(Double, a)] -> a
+pick g vs = undefined
