@@ -8,8 +8,13 @@ module Utilities ( map2
                  , cdr
                  , cadr
                  , (&)
+                 , nrandoms
+                 , pick
                  )
     where
+
+
+import System.Random
 
 map2 :: (a -> b -> c) -> [a] -> [b] -> [c]
 map2 f as bs = map (uncurry f) (zip as bs)
