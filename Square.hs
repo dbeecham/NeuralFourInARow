@@ -28,7 +28,8 @@ iterations population = iterate (strangeSelection fit) population
 -- Iterates fitness and selection on a population, where the
 -- selection function uses randomness.
 randomIterations :: RandomGen g => g -> Population -> [Population]
-randomIterations g population = map snd $ iterate (rouletteWheel fit) (g, population)
+randomIterations g population = 
+    map fst $ iterate (rouletteWheel fit) (population, g)
 
 maximums :: [Population] -> [Double]
 maximums populations = map maximum $ (map.map) fit $ populations

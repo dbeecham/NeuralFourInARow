@@ -56,7 +56,10 @@ A Roulette Wheel picks out
 >     where fitnesses = fmap fitness population
 >           totalFitness = sum fitnesses
 >           relativeFitness = fmap (/totalFitness) fitnesses
->           (rands, g') = nrandoms g (length population)
+>           (population', g') = pickn g (zip relativeFitness population) (length population)
+
+
+
 
 
 Identity selection. Only here for testing purposes.

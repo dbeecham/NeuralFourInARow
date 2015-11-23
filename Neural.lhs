@@ -50,7 +50,7 @@ Creating networks
 > nfromList sizes values = 
 >     let matrixSizes = map (\(x, y) -> (x + 1, y)) (pairs sizes)
 >         multTuple (x, y) = x*y
->         partitions = partition (map multTuple matrixSizes) values
+>         partitions = partition' (map multTuple matrixSizes) values
 >     in map2 (\(x, y) values -> (x><y) values) matrixSizes partitions
 
 > randomNetwork :: [Int] -> IO Network
