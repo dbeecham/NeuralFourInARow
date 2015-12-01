@@ -11,6 +11,8 @@ module Utilities ( map2
                  , nrandoms
                  , pick
                  , pickn
+                 , flattentuples
+                 , pairs2
                  )
     where
 
@@ -38,6 +40,14 @@ add f xs = zip (map f xs) xs
 
 pairs :: [a] -> [(a, a)]
 pairs xs = zip xs (drop 1 xs)
+
+pairs2 :: [a] -> [(a, a)]
+pairs2 (x:y:xs) = (x,y):(pairs2 xs)
+pairs2 _ = []
+
+flattentuples :: [(a, a)] -> [a]
+flattentuples [] = []
+flattentuples ((x, y):xs) = x:y:(flattentuples xs)
 
 removeLast :: Int -> [a] -> [a]
 removeLast n xs = take ((length xs) - n) xs
