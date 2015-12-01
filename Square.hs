@@ -6,6 +6,7 @@ import Utilities
 import Numeric.LinearAlgebra
 import System.Random
 
+newtype Phenotype = Network
 
 trainingSet :: TrainingSet
 trainingSet = [ ((1><3)[1, 1, 1], (6><1)[1, 1, 1, 0, 1, 1])
@@ -20,8 +21,11 @@ randompopulation = do
     g <- getStdGen
     return $ map nflatten $ take 10 $ randomNetworks g [3, 6]
 
+morphogenesis :: Genotype -> Phenotype
+morphogenesis g = nfromList [3, 6]
+
 fit :: Genotype -> Double
-fit = (fitness trainingSet) . (nfromList [3, 6])
+fit = (fitness trainingSet) . morphogenesis
 
 -- Iterates fitness and selection on a population, where the
 -- selection function uses randomness.
