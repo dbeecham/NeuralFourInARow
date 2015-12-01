@@ -13,6 +13,7 @@ module Utilities ( map2
                  , pickn
                  , flattentuples
                  , pairs2
+                 , changeito
                  )
     where
 
@@ -24,6 +25,7 @@ map2 :: (a -> b -> c) -> [a] -> [b] -> [c]
 map2 f as bs = map (uncurry f) (zip as bs)
 
 (&) = flip ($)
+(~>) = flip (.)
 
 partitionEvery :: Int -> [a] -> [[a]]
 partitionEvery _ [] = []
@@ -44,6 +46,15 @@ pairs xs = zip xs (drop 1 xs)
 pairs2 :: [a] -> [(a, a)]
 pairs2 (x:y:xs) = (x,y):(pairs2 xs)
 pairs2 _ = []
+
+roundToN :: Int -> Double -> Double
+roundToN n v = (v * (10^n))
+             & round
+             & fromInteger
+             & (/ 10^n)
+
+changeito :: [a] -> Int -> a -> [a]
+changeito xs i v = (take i xs) ++ [v] ++ (drop (i + 1) xs)
 
 flattentuples :: [(a, a)] -> [a]
 flattentuples [] = []
