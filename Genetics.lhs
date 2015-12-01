@@ -38,28 +38,50 @@ or solution space). (A population, thus, is akin to a 'beam' in beam search.)
 Selection
 ---------
 
-This is a very strange selection indeed. It's only here for testing purposes.
-(It's really bad, it gets stuck in local maxima *quickly*)
+Elite selection picks out the best n individuals of a population.
 
-> strangeSelection :: (Genotype -> Double) -> Population -> Population
-> strangeSelection fitness population = 
->    let evaluations = add fitness population & sort & fmap snd
->        noBadGenes = removeLast 2 evaluations
->        children = crossover (3, 3) (car noBadGenes, cadr noBadGenes)
->    in noBadGenes ++ [fst children, snd children]
+> eliteSelection :: Int -> (Genotype -> Double) -> Population -> Population
+> eliteSelection x fitness population = 
+>   add fitness population
+>       & sort
+>       & fmap snd
+>       & take x
 
 
-A Roulette Wheel picks out
 
-> rouletteWheel :: RandomGen g => (Genotype -> Double) -> (Population, g) -> (Population, g)
+A roulette wheel (also called Fitness proportionate selection) selects a single
+individual randomly, with each individual having a probability proportional to
+it's fitness of being selected.
+
+> rouletteWheel :: RandomGen g => (Genotype -> Double) -> 
+>                               (Population, g) -> 
+>                               (Genotype, g)
 > rouletteWheel fitness (population, g) = (population', g')
 >     where fitnesses = fmap fitness population
 >           totalFitness = sum fitnesses
 >           relativeFitness = fmap (/totalFitness) fitnesses
->           (population', g') = pickn g (zip relativeFitness population) (length population)
+>           (population', g') = pick g (zip relativeFitness population)
 
 
+> rouletteWheeln :: RandomGen g => Int -> 
+>                                (Genotype -> Double) -> 
+>                                (Population, g) -> 
+>                                (Population, g)
+> rouletteWheeln 0 _ (population, g) = ([], g)
+> rouletteWheeln n fitness (population, g) =
+>   let (individual, g') = rouletteWheel fitness (population, g)
+>       (rest, g'') = rouletteWheeln (n - 1) fitness (population, g)
+>   in (individual:rest, g'')
 
+
+> mySelection :: RandomGen g => (Genotype -> Double) -> (Population, g) -> (Population, g)
+> mySelection fitness (population, g) =
+>   let elites = eliteSelection 2 fitness population
+>       geneLength = length (head elites)
+>       (eliteChildren, g2) = rndcrossover g (car elites, cadr elites)
+>       (rest, g3) = rouletteWheeln (length population - 4) fitness (population, g2)
+>       (children, g4) = rndcrossovers g3 rest
+>   in ((fst eliteChildren):(snd eliteChildren):(elites ++ children), g3)
 
 
 Identity selection. Only here for testing purposes.
@@ -72,8 +94,29 @@ Identity selection. Only here for testing purposes.
 Crossover
 ---------
 
-> crossover :: (Int, Int) -> ([Double], [Double]) -> ([Double], [Double])
+> crossover :: (Int, Int) -> (Genotype, Genotype) -> (Genotype, Genotype)
 > crossover (p1, p2) (xs, ys) =
 >     let r1 = (take p1 xs) ++ (take p2 (drop p1 ys)) ++ (drop (p1+p2) xs)
 >         r2 = (take p1 ys) ++ (take p2 (drop p1 xs)) ++ (drop (p1+p2) ys)
 >     in (r1, r2)
+
+
+> rndcrossover :: RandomGen g => g -> (Genotype, Genotype) -> ((Genotype, Genotype), g)
+> rndcrossover g (xs, ys) =
+>   let geneLength = min (length xs) (length ys)
+>       (crossoverPoint1, g1) = randomR (1, geneLength `div` 2) g
+>       (crossoverPoint2, g2) = randomR (1, geneLength `div` 2) g1
+>   in (crossover (crossoverPoint1, crossoverPoint2) (xs, ys), g2)
+
+> rndcrossovers :: RandomGen g => g -> Population -> (Population, g)
+> rndcrossovers g population =
+>   let marriages = pairs2 population
+>       (children, g2) = rndcrossovers' g marriages
+>   in (flattentuples children, g2)
+
+> rndcrossovers' :: RandomGen g => g -> [(Genotype, Genotype)] -> ([(Genotype, Genotype)], g)
+> rndcrossovers' g [] = ([], g)
+> rndcrossovers' g ((a, b):rest) =
+>   let (children, g2) = rndcrossover g (a, b)
+>       (rest', g3) = rndcrossovers' g rest
+>   in (children:rest', g3)
