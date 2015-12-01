@@ -96,5 +96,5 @@ Training a network
 >         ys = concat (map (toList . flatten . snd) training)
 >         actual = concat (map (toList . flatten . (forward network)) xs)
 >         differences = zipWith (-) ys actual
->     in sqrt (sum (map (^2) differences))
+>     in (-1) * sqrt (sum (map (^2) differences))
 
