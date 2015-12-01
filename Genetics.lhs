@@ -120,3 +120,23 @@ Crossover
 >   let (children, g2) = rndcrossover g (a, b)
 >       (rest', g3) = rndcrossovers' g rest
 >   in (children:rest', g3)
+
+
+Mutation
+--------
+
+mutation changes a random value in the genotype to a random value. This
+happens with probability 'prob'. The nested 'let' is to decrease the
+number of random values generated.
+
+> mutation :: RandomGen g => g -> Double -> Genotype -> (Genotype, g)
+> mutation g prob individual =
+>   let (roll, g') = random g
+>       willmutate = roll < prob
+>   in if willmutate
+>       then 
+>           let (mutationPoint, g'') = randomR (0, (length individual)) g'
+>               (mutationValue, g''') = random g''
+>           in (changeito individual mutationPoint mutationValue, g''')
+>       else
+>           (individual, g')
