@@ -63,6 +63,9 @@ flattentuples ((x, y):xs) = x:y:(flattentuples xs)
 removeLast :: Int -> [a] -> [a]
 removeLast n xs = take ((length xs) - n) xs
 
+mapfst :: (a -> b) -> (a, c) -> (b, c)
+mapfst f (x, y) = (f x, y)
+
 car = head
 cdr = tail
 cadr = car . cdr

@@ -1,12 +1,17 @@
 module Square where
 
 import Genetics
-import Neural
+import qualified Neural
 import Utilities
+import qualified Numeric.LinearAlgebra
+    ( cmap )
 import Numeric.LinearAlgebra
+    ( (<>)
+    , (><)
+    )
 import System.Random
 
-newtype Phenotype = Network
+newtype Phenotype = Network Double
 
 trainingSet :: TrainingSet
 trainingSet = [ ((1><3)[1, 1, 1], (6><1)[1, 1, 1, 0, 1, 1])
@@ -19,10 +24,10 @@ trainingSet = [ ((1><3)[1, 1, 1], (6><1)[1, 1, 1, 0, 1, 1])
 randompopulation :: IO [Genotype]
 randompopulation = do
     g <- getStdGen
-    return $ map nflatten $ take 10 $ randomNetworks g [3, 6]
+    return $ map Neural.flatten $ take 10 $ randomNetworks g [3, 6]
 
 morphogenesis :: Genotype -> Phenotype
-morphogenesis g = nfromList [3, 6]
+morphogenesis g = Neural.fromList [3, 6]
 
 fit :: Genotype -> Double
 fit = (fitness trainingSet) . morphogenesis
@@ -43,3 +48,10 @@ example = do
     population <- randompopulation
     return $ maximums (iterations g population)
 
+fitness :: Neural.TrainingSet -> Neural.Network -> Double
+fitness training network =
+    let xs = map fst training
+        ys = concat (map (Neural.toList . Neural.flatten . snd) training)
+        actual = concat (map (Neural.toList . Neural.flatten . (Neural.forward network)) xs)
+        differences = zipWith (-) ys actual
+    in (-1) * sqrt (sum (map (^2) differences))
