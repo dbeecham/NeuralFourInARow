@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedLists #-}
 module Utilities ( map2
                  , partitionEvery
                  , partition'
