@@ -1,3 +1,5 @@
+> {-# LANGUAGE OverloadedLists #-}
+
 Neural Networks
 ===============
 
@@ -5,8 +7,14 @@ This module aims to implement creation and evaluation of basic feed-forward
 neural networks, along with a way to optimize the network (through
 backpropagation) to fit a training set.
 
-> module Neural where
+> module Neural 
+> ( Network
+> , network
+> , TrainingSet
+> , evaluate
+> ) where
 
+> import Prelude hiding (zipWith, zip, drop, length, take)
 > import qualified Numeric.LinearAlgebra as Matrix
 >   ( fromLists
 >   , cmap
@@ -15,30 +23,36 @@ backpropagation) to fit a training set.
 >   )
 > import Numeric.LinearAlgebra
 >   ( (<>)
->   , (><)
 >   , (|||)
 >   , (<#)
 >   , (#>)
 >   , (<.>)
+>   , norm_2
 >   , vector
 >   , Matrix
 >   , Element
 >   , Numeric
 >   , Vector
+>   , matrix
 >   )
+> import Data.Sequence
+> import qualified Data.Sequence as Sequence (fromList)
+> import Data.Foldable (toList)
 > import System.Random
 > import Utilities
 > import Data.Monoid (mappend)
 
-A network is a list of weight-matrices. Each entry in the list is a single layer
+> type Error = String
+
+A network is a sequence of weight-matrices. Each entry in the list is a single layer
 in the network, each column of a matrix defines the weighs of a neuron.
 
-> type Network = [Matrix Double]
+> type Network = Seq (Matrix Double)
 
 To train a network, it's useful to define a training set (x, f(x)) which
 the network aims to fit.
 
-> type TrainingSet = [(Matrix Double, Matrix Double)]
+> type TrainingSet = Seq (Vector Double, Vector Double)
 
 
 
@@ -61,26 +75,34 @@ Creating networks
 
 If we have a list of n*m matrixes (in list form), then we can
 
-> fromLists :: [[[Double]]] -> Network
-> fromLists = map Matrix.fromLists
+> test :: Network
+> test = case network [1,2,3] [1..1000] of
+>   Right x -> x
+>   Left _ -> []
 
-> fromList :: [Int] -> [Double] -> Network
-> fromList sizes values = 
->     let matrixSizes = map (\(x, y) -> (x + 1, y)) (pairs sizes)
->         multTuple (x, y) = x*y
->         partitions = partition' (map multTuple matrixSizes) values
->     in map2 (\(x, y) values -> (x><y) values) matrixSizes partitions
-
+> network :: Seq Int -> Seq Double -> Either Error Network
+> network sizes weights =
+>   let matrixSizes' = (flip zip) sizes (drop 1 sizes)
+>       matrixSizes = fmap (\(i,j) -> (i, j+1)) matrixSizes'
+>       neededWeights = fmap (\(a,b) -> a*b) matrixSizes
+>       totalNeededWeights = sum neededWeights
+>       availableWeights = length weights
+>       weights' = take totalNeededWeights weights
+>       partitions = fromList $ partition' (toList neededWeights) (toList weights')
+>       mkMatrix (_,j) values = matrix j values
+>   in if availableWeights >= totalNeededWeights
+>       then Right $ zipWith mkMatrix matrixSizes partitions
+>       else Left $ "Was not given enough weights."
 
 
 Breaking down networks
 ----------------------
 
-> flatten :: Network -> [Double]
-> flatten = concat . concat . toLists
+> serialize :: Network -> Seq Double
+> serialize = Sequence.fromList . concat . concat . toLists
 
-> toLists :: Network -> [[[Double]]]
-> toLists = map Matrix.toLists
+> toLists :: Network -> Seq [[Double]]
+> toLists = fmap Matrix.toLists
 
 
 Using a network
@@ -88,15 +110,14 @@ Using a network
 
 > evaluate :: Network -> Vector Double -> Vector Double
 > evaluate network input = 
->   let inputWithBias = input `mappend` vector [1]
->       accumulator last next = Matrix.cmap sigmoid (last #> next)
+>   let accumulator last next = Matrix.cmap sigmoid (last #> (next `mappend` vector [1]))
 >   in foldr accumulator input network
 
-> error :: Network -> TrainingSet -> Vector Double
+> error :: Network -> TrainingSet -> Seq Double
 > error network training =
->     let xs = map fst training
->         ys = map snd training
->         actual = map (evaluate network) xs
+>     let xs = fmap fst training
+>         ys = fmap snd training
+>         actual = fmap (evaluate network) xs
 >         differences = zipWith (-) actual ys
->     in sum $ map norm_2 differences
+>     in fmap norm_2 differences
 
