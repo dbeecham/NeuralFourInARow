@@ -11,13 +11,13 @@ triple-point, uniform) and a few different ways to select individuals, given
 a fitness-function (including fitness-proportionate (also called Roulette Wheel),
 tournament, elitism)) and some way to introduce mutation.
 
-> import BasePrelude
+> import BasePrelude hiding (take)
 > import Utilities hiding ((&))
 > import System.Random
 > import Control.Monad.Random
-> import Data.Sequence (Seq)
+> import Data.Sequence (Seq, take, unstableSortBy)
 > import qualified Data.Sequence as Sequence
->   (length)
+>   (fromList)
 
 
 
@@ -29,21 +29,19 @@ or solution space). (A population, thus, is akin to a 'beam' in beam search.)
 
 > type Genotype = Seq Double
 > type Population = Seq Genotype
+> type FitnessFunction = Genotype -> Double
 
 > type Rnd = Rand StdGen
 
-
 > genotype :: Int -> Rnd Genotype
 > genotype length = do
->   rnds <- getRandoms
->   return fromList (take length rnds)
+>   rnds <- sequence (replicate length getRandom)
+>   return $ Sequence.fromList rnds
 
-randomGenotypes :: (RandomGen g) => g -> Int -> [Genotype]
-randomGenotypes g geneSize = partitionEvery geneSize (randoms g) 
-
-randomPopulation :: RandomGen g => g -> Int -> Int -> Population
-randomPopulation g populationSize geneSize = take populationSize (randomGenotypes g geneSize)
-
+> population :: Int -> Int -> Rnd Population
+> population populationSize geneLength = do
+>   population <- sequence (replicate populationSize (genotype geneLength))
+>   return $ Sequence.fromList population
 
 
 
@@ -52,12 +50,9 @@ Selection
 
 Elite selection picks out the best n individuals of a population.
 
- eliteSelection :: Int -> (Genotype -> Double) -> Population -> Population
- eliteSelection x fitness population = 
-   add fitness population
-       & sort
-       & fmap snd
-       & take x
+> eliteSelection :: Int -> FitnessFunction -> Population -> Rnd Population
+> eliteSelection x fitness population = do
+>   return $ take x $ unstableSortBy (comparing fitness) population
 
 
 
